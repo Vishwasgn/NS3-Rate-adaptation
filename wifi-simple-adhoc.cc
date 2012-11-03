@@ -195,7 +195,7 @@ int main (int argc, char *argv[])
   positionAlloc->Add (Vector (250.0, 0.0, 0.0));//1
   positionAlloc->Add (Vector (250.0, 250.0, 0.0));//2
   positionAlloc->Add (Vector (250.0, 500.0, 0.0));//3
-  positionAlloc->Add (Vector (1000.0, 250.0, 0.0));//4
+  positionAlloc->Add (Vector (500.0, 250.0, 0.0));//4
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (c);
@@ -237,6 +237,13 @@ int main (int argc, char *argv[])
   source->SetAllowBroadcast (true);
   source->Connect (remote);
 
+  //create another source 
+
+  Ptr<Socket> source1 = Socket::CreateSocket (c.Get (1), tid);
+  InetSocketAddress remote1 = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
+  source1->SetAllowBroadcast (true);
+  source1->Connect (remote1);  
+
   // Tracing
   wifiPhy.EnablePcap ("wifi-simple-adhoc", devices);
 
@@ -246,6 +253,10 @@ int main (int argc, char *argv[])
   Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
                                   Seconds (1.0), &GenerateTraffic, 
                                   source, packetSize, numPackets, interPacketInterval);
+
+  Simulator::ScheduleWithContext (source1->GetNode ()->GetId (),
+                                  Seconds (1.2), &GenerateTraffic, 
+                                  source1, packetSize, numPackets, interPacketInterval);    
 
   Simulator::Run ();
   Simulator::Destroy ();
