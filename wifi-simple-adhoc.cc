@@ -1,5 +1,5 @@
 /* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
-/*samplechange
+/*
  * Copyright (c) 2009 The Boeing Company
  *
  * This program is free software; you can redistribute it and/or modify
@@ -57,7 +57,7 @@
 #include "ns3/config-store-module.h"
 #include "ns3/wifi-module.h"
 #include "ns3/internet-module.h"
-
+#include "ns3/header.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -69,7 +69,33 @@ using namespace ns3;
 
 void ReceivePacket (Ptr<Socket> socket)
 {
-  NS_LOG_UNCOND ("Received one packet!");
+        //Ptr<Packet> recvd = socket->Recv();
+        //uint8_t *buffer = new uint8_t[recvd->GetSize ()];
+        //std::ostream& os;
+        //NS_LOG_UNCOND ("Size of buffer=" << sizeof(buffer));
+        //NS_LOG_UNCOND ("soket" << *recvd );
+        //NS_LOG_UNCOND ("Size="<<recvd->GetSize ());
+        //recvd->CopyData (buffer, recvd->GetSize());
+        //string data = string((char*)buffer);
+        //Ptr<Header> hh = new UdpHeader();
+ 
+        //recvd->PeekHeader(hh);
+        //NS_LOG_UNCOND ( "header" << hh );
+        //uint8_t headet = socket->getRate();
+        //NS_LOG_UNCOND ( "he" << headset );
+        //NS_LOG_UNCOND ("Header="<<hh);
+        //for(uint32_t i=0;i<recvd->GetSize();i++)
+        //{
+        //buffer[i]=i%256;        
+        //NS_LOG_UNCOND ("i="<<(int)buffer[i]);
+        //}        
+        //NS_LOG_UNCOND ("Received one packet!");
+        Ptr<Node> nd = socket->GetNode();
+    Ptr<Packet> p = socket->Recv();
+    //UdpHeader hd;
+    //p->PeekHeader(hd);
+    //NS_LOG_UNCOND("Read packet header"<<hd);
+    NS_LOG_UNCOND ("Node "<<nd->GetId()<<" Received one packet! Uid="<<p->GetUid());   
 }
 
 static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize, 
@@ -77,7 +103,9 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
 {
   if (pktCount > 0)
     {
-      socket->Send (Create<Packet> (pktSize));
+      uint8_t packetdata[4] = {10,20,30,40};
+      socket->Send (Create<Packet> (packetdata,4));
+      //socket->Send (p);
       Simulator::Schedule (pktInterval, &GenerateTraffic, 
                            socket, pktSize,pktCount-1, pktInterval);
     }
@@ -90,9 +118,11 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
 
 int main (int argc, char *argv[])
 {
-  std::string phyMode ("DsssRate1Mbps");
+  //ErpOfdmRate24Mbps      
+  //std::string phyMode ("DsssRate11Mbps");
+  std::string phyMode ("ErpOfdmRate24Mbps"); 
   double rss = -80;  // -dBm
-  uint32_t packetSize = 1000; // bytes
+  uint32_t packetSize = 100; // bytes
   uint32_t numPackets = 1;
   double interval = 1.0; // seconds
   bool verbose = false;
@@ -114,12 +144,12 @@ int main (int argc, char *argv[])
   Config::SetDefault ("ns3::WifiRemoteStationManager::FragmentationThreshold", StringValue ("2200"));
   // turn off RTS/CTS for frames below 2200 bytes
   Config::SetDefault ("ns3::WifiRemoteStationManager::RtsCtsThreshold", StringValue ("2200"));
-  // Fix non-unicast data rate to be the same as that of unicast - this should be used for broadcast
+  // Fix non-unicast data rate to be the same as that of unicast
   Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode", 
                       StringValue (phyMode));
 
   NodeContainer c;
-  c.Create (2);
+  c.Create (5);
 
   // The below set of helpers will help us to put together the wifi NICs we want
   WifiHelper wifi;
@@ -140,7 +170,12 @@ int main (int argc, char *argv[])
   wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
   // The below FixedRssLossModel will cause the rss to be fixed regardless
   // of the distance between the two stations, and the transmit power
-  wifiChannel.AddPropagationLoss ("ns3::FixedRssLossModel","Rss",DoubleValue (rss));
+  //wifiChannel.AddPropagationLoss ("ns3::FixedRssLossModel","Rss",DoubleValue (rss));
+  //uint8_t nRays = 3;
+  //uint8_t nOscillators = 8;
+        //JakesFadingLossModel
+  wifiChannel.AddPropagationLoss ("ns3::FriisPropagationLossModel"); 
+  //wifiChannel.AddPropagationLoss ("ns3::JakesFadingLossModel"); 
   wifiPhy.SetChannel (wifiChannel.Create ());
 
   // Add a non-QoS upper mac, and disable rate control
@@ -155,9 +190,12 @@ int main (int argc, char *argv[])
   // Note that with FixedRssLossModel, the positions below are not 
   // used for received signal strength. 
   MobilityHelper mobility;
-  Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-  positionAlloc->Add (Vector (0.0, 0.0, 0.0));
-  positionAlloc->Add (Vector (5.0, 0.0, 0.0));
+  Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();  
+  positionAlloc->Add (Vector (0.0, 250.0, 0.0));//0
+  positionAlloc->Add (Vector (250.0, 0.0, 0.0));//1
+  positionAlloc->Add (Vector (250.0, 250.0, 0.0));//2
+  positionAlloc->Add (Vector (250.0, 500.0, 0.0));//3
+  positionAlloc->Add (Vector (1000.0, 250.0, 0.0));//4
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (c);
@@ -171,12 +209,30 @@ int main (int argc, char *argv[])
   Ipv4InterfaceContainer i = ipv4.Assign (devices);
 
   TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-  Ptr<Socket> recvSink = Socket::CreateSocket (c.Get (0), tid);
+  Ptr<Socket> recvSink = Socket::CreateSocket (c.Get (2), tid);
   InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
   recvSink->Bind (local);
   recvSink->SetRecvCallback (MakeCallback (&ReceivePacket));
 
-  Ptr<Socket> source = Socket::CreateSocket (c.Get (1), tid);
+//add one more reciever 
+  Ptr<Socket> recvSink1 = Socket::CreateSocket (c.Get (1), tid);
+  InetSocketAddress local1 = InetSocketAddress (Ipv4Address::GetAny (), 80);
+  recvSink1->Bind (local1);
+  recvSink1->SetRecvCallback (MakeCallback (&ReceivePacket));
+
+  //add one more reciever 
+  Ptr<Socket> recvSink2 = Socket::CreateSocket (c.Get (3), tid);
+  InetSocketAddress local2 = InetSocketAddress (Ipv4Address::GetAny (), 80);
+  recvSink2->Bind (local2);
+  recvSink2->SetRecvCallback (MakeCallback (&ReceivePacket));
+    
+  //add one more reciever 
+  Ptr<Socket> recvSink3 = Socket::CreateSocket (c.Get (4), tid);
+  InetSocketAddress local3 = InetSocketAddress (Ipv4Address::GetAny (), 80);
+  recvSink3->Bind (local3);
+  recvSink3->SetRecvCallback (MakeCallback (&ReceivePacket)); 
+    
+  Ptr<Socket> source = Socket::CreateSocket (c.Get (0), tid);
   InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
   source->SetAllowBroadcast (true);
   source->Connect (remote);
@@ -185,7 +241,7 @@ int main (int argc, char *argv[])
   wifiPhy.EnablePcap ("wifi-simple-adhoc", devices);
 
   // Output what we are doing
-  NS_LOG_UNCOND ("Testing " << numPackets  << " packets sent with receiver rss " << rss );
+  //NS_LOG_UNCOND ("Testing " << numPackets  << " packets sent with receiver rss " << rss );
 
   Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
                                   Seconds (1.0), &GenerateTraffic, 
