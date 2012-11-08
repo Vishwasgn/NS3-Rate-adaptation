@@ -69,33 +69,16 @@ using namespace ns3;
 
 void ReceivePacket (Ptr<Socket> socket)
 {
-        //Ptr<Packet> recvd = socket->Recv();
-        //uint8_t *buffer = new uint8_t[recvd->GetSize ()];
-        //std::ostream& os;
-        //NS_LOG_UNCOND ("Size of buffer=" << sizeof(buffer));
-        //NS_LOG_UNCOND ("soket" << *recvd );
-        //NS_LOG_UNCOND ("Size="<<recvd->GetSize ());
-        //recvd->CopyData (buffer, recvd->GetSize());
-        //string data = string((char*)buffer);
-        //Ptr<Header> hh = new UdpHeader();
- 
-        //recvd->PeekHeader(hh);
-        //NS_LOG_UNCOND ( "header" << hh );
-        //uint8_t headet = socket->getRate();
-        //NS_LOG_UNCOND ( "he" << headset );
-        //NS_LOG_UNCOND ("Header="<<hh);
-        //for(uint32_t i=0;i<recvd->GetSize();i++)
-        //{
-        //buffer[i]=i%256;        
-        //NS_LOG_UNCOND ("i="<<(int)buffer[i]);
-        //}        
-        //NS_LOG_UNCOND ("Received one packet!");
+       
         Ptr<Node> nd = socket->GetNode();
     Ptr<Packet> p = socket->Recv();
+    uint8_t *buffer = new uint8_t[p->GetSize ()];
+    p->CopyData(buffer,p->GetSize ());
+    //cout <<"1 st byte " << (int)buffer[0] <<(int)buffer[1] <<endl;
     //UdpHeader hd;
     //p->PeekHeader(hd);
     //NS_LOG_UNCOND("Read packet header"<<hd);
-    NS_LOG_UNCOND ("Node "<<nd->GetId()<<" Received one packet! Uid="<<p->GetUid());   
+    NS_LOG_UNCOND ("Node "<<nd->GetId()<<" Received one packet! Uid="<<p->GetUid()<< "from" << (int)buffer[0] );   
 }
 
 static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize, 
@@ -103,7 +86,13 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
 {
   if (pktCount > 0)
     {
-      uint8_t packetdata[4] = {10,20,30,40};
+      Ptr<Node> nd = socket->GetNode();/*getting node*/
+      int node_no;
+      node_no = nd->GetId();
+      cout<<"sending packet from " << node_no << endl;
+      uint8_t packetdata[4] = {11,20,30,40};
+      /*1 byte of the packet will have sourcr node no*/
+      packetdata[0] = node_no;
       socket->Send (Create<Packet> (packetdata,4));
       //socket->Send (p);
       Simulator::Schedule (pktInterval, &GenerateTraffic, 
@@ -123,7 +112,7 @@ int main (int argc, char *argv[])
   std::string phyMode ("ErpOfdmRate24Mbps"); 
   double rss = -80;  // -dBm
   uint32_t packetSize = 100; // bytes
-  uint32_t numPackets = 1;
+  uint32_t numPackets = 10;
   double interval = 1.0; // seconds
   bool verbose = false;
 
