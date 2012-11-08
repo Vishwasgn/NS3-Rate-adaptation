@@ -174,7 +174,8 @@ int main (int argc, char *argv[])
   //uint8_t nRays = 3;
   //uint8_t nOscillators = 8;
         //JakesFadingLossModel
-  wifiChannel.AddPropagationLoss ("ns3::FriisPropagationLossModel"); 
+  //wifiChannel.AddPropagationLoss ("ns3::FriisPropagationLossModel"); 
+  wifiChannel.AddPropagationLoss ("ns3::RandomPropagationLossModel","Variable", RandomVariableValue (ExponentialVariable (100.0))); 
   //wifiChannel.AddPropagationLoss ("ns3::JakesFadingLossModel"); 
   wifiPhy.SetChannel (wifiChannel.Create ());
 
