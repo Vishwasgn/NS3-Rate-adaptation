@@ -5,6 +5,7 @@
 #include "GaloisFieldElement.h"
 #include "GaloisFieldPolynomial.h"
 #include "GeneratorPolynomialCreator.h"
+//test git
 #include <time.h>
 //#include "globVar.h"
 
